@@ -1,0 +1,7 @@
+[project]
+name = "moic-supply-chain-agent"
+version = "1.0.0"
+description = "Neuro-Symbolic Supply Chain Decision Agent using the MOIC framework, LightGBM surrogates, and LangGraph ReAct orchestration."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []

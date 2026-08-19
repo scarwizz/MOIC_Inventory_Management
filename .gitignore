@@ -1,0 +1,103 @@
+# ============================================================
+# .gitignore for MOIC Supply Chain Agent
+# Python 3.12 | Streamlit | LangChain | LightGBM | CatBoost
+# ============================================================
+
+# ── Secrets & credentials ────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets.json
+service_account*.json
+
+# ── Python cache & compiled files ───────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# ── Virtual environments ─────────────────────────────────────
+venv/
+.venv/
+env/
+.env_dir/
+ENV/
+venv.bak/
+
+# ── Build / distribution artefacts ──────────────────────────
+build/
+dist/
+wheels/
+*.egg-info/
+*.egg
+.eggs/
+MANIFEST
+
+# ── ML model files (large binaries — use Releases instead) ──
+models/*.joblib
+models/*.pkl
+models/*.cbm
+models/*.bin
+
+# ── Large dataset files ──────────────────────────────────────
+Dataset/sales_train_validation.csv
+Dataset/sales_train_level_11.csv
+Dataset/sell_prices.csv
+Dataset/calendar.csv
+# Keep m5_demand_features.csv (small, needed for SKU lookup)
+# Uncomment the line below to also exclude it:
+# Dataset/m5_demand_features.csv
+
+# ── Jupyter Notebook artefacts ───────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── Pytest & coverage ────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# ── Type checking ────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+.pyright/
+
+# ── Packaging tools ──────────────────────────────────────────
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ── IDE configurations ───────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.code-workspace
+
+# ── OS artefacts ─────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── Streamlit cache ──────────────────────────────────────────
+.streamlit/secrets.toml
+
+# ── Temporary files ──────────────────────────────────────────
+*.tmp
+*.bak
+*.swp
+*.log
+*.pid
