@@ -228,26 +228,26 @@ Final natural-language response to user
 ```
 
 **Implementation Details:**
-- **LLM:** `llama-3.3-70b-versatile` via Groq Cloud (temperature=0 for deterministic outputs)
+- **LLM:** Configurable via `GROQ_MODEL` (defaults to `qwen/qwen3.8-27b` or `llama-3.3-70b-versatile` via Groq Cloud, temperature=0 for deterministic outputs)
 - **Graph:** `StateGraph(MessagesState)` with two nodes: `agent` and `tools`
 - **Routing:** `tools_condition` — if last message has `tool_calls`, route to tools; otherwise END
-- **Recursion cap:** Hard limit of 12 steps prevents runaway tool-calling loops (~6 full tool round-trips maximum)
+- **Recursion cap:** 24 steps (`GRAPH_CONFIG = {"recursion_limit": 24}`) allows rich multi-policy comparisons (up to ~12 tool round-trips)
 - **Streaming:** `app.stream(mode="values")` enables real-time status updates in the Streamlit UI
 
 ---
 
 ### 7. Tooling & Context Strategy
 
-**Three LangChain Tools — enforced call sequence:**
+**Three LangChain Tools — deterministic symbolic interface:**
 
 | Order | Tool | Input Schema | What it does |
 |-------|------|-------------|--------------|
-| 1st | `get_sku_profile` | `sku_id: str` | Looks up ADI and CV² for the requested SKU from the 9,147-series M5 catalogue (O(1) in-memory dict) |
-| 2nd | `simulate_policy_outcomes` | `adi, cv2, r, l, tsl` | Builds 8-feature vector, runs LightGBM inference, returns AvgInventory, LostSales, NumOrders |
-| 3rd | `calculate_financial_impact` | `avg_inv, lost_sales, num_orders, h, b, k` | Computes `Cost = h·I + b·LS + k·N` and returns cost breakdown |
+| 1st | `get_sku_profile` | `sku_id: str` | Retrieves ADI and CV² for the requested SKU from the 12,201-key catalogue (9,147 state series + base items + archetypes) in $O(1)$ |
+| 2nd | `simulate_policy_outcomes` | `adi, cv2, r, l, tsl, model_framework?` | Builds 8-feature vector, runs LightGBM, CatBoost, or Ensemble inference; returns AvgInventory, LostSales, NumOrders |
+| 3rd | `calculate_financial_impact` | `avg_inv, lost_sales, num_orders, h, b, k` | Computes `Cost = h·I + b·LS + k·N` and returns decomposed monetary cost breakdown |
 
 **No RAG / Vector Store:**
-The system uses a **structured in-memory database** rather than RAG — demand features are deterministic and structured, making semantic retrieval unnecessary and slower.
+The system uses a **structured in-memory database** rather than RAG — demand features are deterministic and structured, making semantic vector retrieval unnecessary and slower.
 
 **State Management:**
 - Conversation history lives in `st.session_state.lc_messages` (LangChain `HumanMessage` / `AIMessage` objects)
@@ -258,9 +258,10 @@ The system uses a **structured in-memory database** rather than RAG — demand f
 ```python
 # sku_store.py — loaded once at import time, O(1) lookups forever
 _SKU_DB = {
-    "FOODS_1_001_CA": {"adi": 1.23, "cv2": 0.45},
-    ...  # 9,147 real M5 entries
-    "SKU_FAST_MOVING": {"adi": 1.1, "cv2": 0.2},  # 5 mock archetypes always available
+    "FOODS_1_001_CA": {"adi": 1.22, "cv2": 0.68},  # 9,147 Level-11 state-specific entries
+    "FOODS_1_001":    {"adi": 1.22, "cv2": 0.68},  # 3,049 base item fallbacks
+    "SKU_FAST_MOVING": {"adi": 1.10, "cv2": 0.20},  # 5 mock archetypes always available
+    # Total: 12,201 instant-lookup keys
 }
 ```
 
@@ -277,15 +278,16 @@ The system prompt in `agent_core.py` is engineered around three constraints:
 You are strictly forbidden from guessing, estimating, or calculating
 any inventory metric yourself. Follow this exact workflow:
   1. Call get_sku_profile to retrieve the real ADI and CV2.
-  2. Call simulate_policy_outcomes using those values.
+  2. Call simulate_policy_outcomes using those values (optionally pass model_framework).
   3. If costs are needed, call calculate_financial_impact.
 ```
 
-**2. Hard termination instruction (prevents recursion):**
+**2. Multi-Policy Comparison Protocol:**
 ```
-CRITICAL INSTRUCTION: Once you have received the result from
-calculate_financial_impact, you MUST immediately synthesize the
-final answer and STOP. Do NOT call any tools again.
+If the user asks to compare two policies (e.g. R=7 vs R=14) or compare two SKUs:
+  - Execute profile, simulation, and cost steps for EACH scenario.
+  - Synthesize a structured comparative table and clearly recommend the cost-minimizing policy.
+  - STOP calling tools once all comparative scenarios are evaluated.
 ```
 
 **3. Output format mandate:**
@@ -295,10 +297,10 @@ sections for SKU profile, simulation outcomes, and cost breakdown.
 ```
 
 **Safety Guardrails:**
-- `recursion_limit: 12` in `GRAPH_CONFIG` — hard graph-level cap
+- `recursion_limit: 24` in `GRAPH_CONFIG` — hard graph-level cap preventing infinite loops while accommodating comparisons
 - Rate-limit errors caught and surfaced to the user with wait time parsed from the error message
 - Pydantic V2 validation on all tool inputs — malformed agent outputs are rejected before hitting the model
-- `_ZeroPredictor` fallback — agent operates safely even without model files
+- `_ZeroPredictor` fallback — agent operates safely even if model files are absent
 
 ---
 
@@ -444,85 +446,99 @@ cp .env.example .env
 
 ### Model Setup
 
-Download `trained_models.zip` from the Releases page and extract the three files into `models/`:
+Pre-trained surrogate models are stored in `models/` (LightGBM and CatBoost):
 
-```
+```text
 models/
-+-- lgbm_avg_inventory.joblib
-+-- lgbm_lost_sales.joblib
-+-- lgbm_num_orders.joblib
+├── lgbm_avg_inventory.joblib
+├── lgbm_lost_sales.joblib
+├── lgbm_num_orders.joblib
+├── catb_AvgInventory.joblib
+├── catb_LostSales.joblib
+└── catb_NumOrders.joblib
 ```
 
-To retrain from scratch on Kaggle, run `kaggle_m5_final_hybrid_pipeline.py` with the M5 dataset attached.
+To retrain from scratch or reproduce the offline ML pipeline, execute the cells in `MAIN_NOTEBOOK.ipynb` on Kaggle (with GPU acceleration).
 
 ### Dataset Setup
 
-Only `m5_demand_features.csv` is required to run the agent:
+Only `m5_demand_features.csv` is required to run the live agent and Streamlit dashboard:
 
-```
+```text
 Dataset/
-+-- m5_demand_features.csv       <- minimum required for SKU lookup
-+-- sales_train_validation.csv   <- only needed to retrain
-+-- calendar.csv                 <- only needed to retrain
-+-- sell_prices.csv              <- only needed to retrain
+├── m5_demand_features.csv       <- Required for SKU demand profile lookup (ADI & CV²)
+├── sales_train_validation.csv   <- Only needed if re-running MAIN_NOTEBOOK.ipynb
+├── calendar.csv                 <- Only needed if re-running MAIN_NOTEBOOK.ipynb
+└── sell_prices.csv              <- Only needed if re-running MAIN_NOTEBOOK.ipynb
 ```
 
 ---
 
 ## Running the App
 
+Launch either the Streamlit web dashboard or the interactive terminal agent:
+
 ```bash
+# Option A: Unified Launcher (Streamlit UI by default)
+python main.py
+
+# Option B: Streamlit Web UI directly
 streamlit run app.py
+
+# Option C: Interactive CLI ReAct Agent
+python main.py --cli
 ```
 
-Opens at http://localhost:8501
+The Streamlit dashboard opens at **http://localhost:8501**.
 
 ---
 
 ## Environment Variables
 
-| Variable | Description | Where to get it |
-|----------|-------------|-----------------|
-| `GROQ_API_KEY` | API key for Groq LLM inference | https://console.groq.com |
+| Variable | Description | Default | Where to get it |
+|----------|-------------|---------|-----------------|
+| `GROQ_API_KEY` | API key for Groq LLM inference | *(required)* | https://console.groq.com |
+| `GROQ_MODEL` | Groq chat model identifier | `qwen/qwen3.8-27b` | Groq Console (e.g. `qwen/qwen3.8-27b` or `llama-3.3-70b-versatile`) |
 
 ---
 
 ## Usage Examples
 
-```
+```text
 Analyse SKU_FAST_MOVING with R=7, L=3, TSL=0.95. Provide the full cost breakdown.
 What are the expected lost sales for SKU_LUMPY with R=14, L=5, TSL=0.90?
 Compare R=7 vs R=14 for FOODS_1_001_CA with L=3 and TSL=0.95. Which minimises cost?
 Run a full MOIC simulation for HOBBIES_1_008_TX with R=10, L=4, TSL=0.98.
-Evaluate inventory risk for SKU_SEASONAL with R=10, L=4, TSL=0.98.
+Evaluate inventory risk for SKU_SEASONAL with R=10, L=4, TSL=0.98 using CatBoost.
 ```
 
 ---
 
 ## Project Structure
 
-```
+```text
 moic-supply-chain-agent/
-+-- app.py                     # Streamlit enterprise dashboard
-+-- agent_core.py              # LangGraph ReAct agent + graph definition
-+-- inventory_tools.py         # LangChain tools: simulate + financial impact
-+-- sku_store.py               # SKU metadata store (M5 catalogue + mock archetypes)
-+-- simulation.py              # (R,s,S) offline simulation engine
-+-- train_surrogates.py        # Local surrogate model training script
-+-- MAIN_NOTEBOOK.ipynb        # Research notebook: full offline pipeline
-+-- analysis.ipynb             # Exploratory data analysis
-+-- models/                    # Trained .joblib files (NOT tracked by git)
-|   +-- lgbm_avg_inventory.joblib
-|   +-- lgbm_lost_sales.joblib
-|   +-- lgbm_num_orders.joblib
-+-- Dataset/                   # M5 data files (NOT tracked by git)
-|   +-- m5_demand_features.csv
-+-- requirements.txt
-+-- pyproject.toml
-+-- .env.example               # Safe secrets template -- commit this
-+-- .env                       # Real secrets -- NEVER commit
-+-- .gitignore
-+-- README.md
+├── main.py                     # Unified entrypoint (Streamlit UI or CLI agent)
+├── app.py                      # Streamlit enterprise dashboard & execution trace
+├── agent_core.py               # LangGraph ReAct agent + multi-scenario graph logic
+├── inventory_tools.py          # LangChain tools: LightGBM, CatBoost & Ensemble inference + financial breakdown
+├── sku_store.py                # SKU metadata store (12,201 keys: 9,147 M5 series + fallbacks + archetypes)
+├── MAIN_NOTEBOOK.ipynb         # Full end-to-end offline pipeline (Data prep, simulation, GPU training)
+├── models/                     # Trained .joblib files (LightGBM & CatBoost surrogates)
+│   ├── lgbm_avg_inventory.joblib
+│   ├── lgbm_lost_sales.joblib
+│   ├── lgbm_num_orders.joblib
+│   ├── catb_AvgInventory.joblib
+│   ├── catb_LostSales.joblib
+│   └── catb_NumOrders.joblib
+├── Dataset/                    # M5 demand feature store
+│   ├── m5_demand_features.csv  <- Minimum required for runtime SKU lookup
+│   └── ...
+├── requirements.txt            # Pinned dependencies
+├── pyproject.toml              # Build & dependency metadata
+├── .env.example                # Safe secrets template
+├── .gitignore                  # Git exclusions (including private notes & models)
+└── README.md
 ```
 
 ---
