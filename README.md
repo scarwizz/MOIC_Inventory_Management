@@ -458,7 +458,7 @@ models/
 └── catb_NumOrders.joblib
 ```
 
-To retrain from scratch or reproduce the offline ML pipeline, execute the cells in `MAIN_NOTEBOOK.ipynb` on Kaggle (with GPU acceleration).
+To retrain from scratch or reproduce the offline ML pipeline, execute the cells in `notebooks/MAIN_NOTEBOOK.ipynb` on Kaggle (with GPU acceleration).
 
 ### Dataset Setup
 
@@ -467,9 +467,9 @@ Only `m5_demand_features.csv` is required to run the live agent and Streamlit da
 ```text
 Dataset/
 ├── m5_demand_features.csv       <- Required for SKU demand profile lookup (ADI & CV²)
-├── sales_train_validation.csv   <- Only needed if re-running MAIN_NOTEBOOK.ipynb
-├── calendar.csv                 <- Only needed if re-running MAIN_NOTEBOOK.ipynb
-└── sell_prices.csv              <- Only needed if re-running MAIN_NOTEBOOK.ipynb
+├── sales_train_validation.csv   <- Only needed if re-running notebooks/MAIN_NOTEBOOK.ipynb
+├── calendar.csv                 <- Only needed if re-running notebooks/MAIN_NOTEBOOK.ipynb
+└── sell_prices.csv              <- Only needed if re-running notebooks/MAIN_NOTEBOOK.ipynb
 ```
 
 ---
@@ -523,7 +523,8 @@ moic-supply-chain-agent/
 ├── agent_core.py               # LangGraph ReAct agent + multi-scenario graph logic
 ├── inventory_tools.py          # LangChain tools: LightGBM, CatBoost & Ensemble inference + financial breakdown
 ├── sku_store.py                # SKU metadata store (12,201 keys: 9,147 M5 series + fallbacks + archetypes)
-├── MAIN_NOTEBOOK.ipynb         # Full end-to-end offline pipeline (Data prep, simulation, GPU training)
+├── notebooks/                  # Offline research & training
+│   └── MAIN_NOTEBOOK.ipynb     # Full end-to-end offline pipeline (Data prep, simulation, GPU training)
 ├── models/                     # Trained .joblib files (LightGBM & CatBoost surrogates)
 │   ├── lgbm_avg_inventory.joblib
 │   ├── lgbm_lost_sales.joblib
@@ -534,6 +535,7 @@ moic-supply-chain-agent/
 ├── Dataset/                    # M5 demand feature store
 │   ├── m5_demand_features.csv  <- Minimum required for runtime SKU lookup
 │   └── ...
+├── docs/                       # Project documentation & guides (local/private)
 ├── requirements.txt            # Pinned dependencies
 ├── pyproject.toml              # Build & dependency metadata
 ├── .env.example                # Safe secrets template
