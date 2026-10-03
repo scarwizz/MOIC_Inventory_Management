@@ -185,8 +185,8 @@ with st.sidebar:
     st.markdown("""
     <div style="font-size:0.82rem; line-height:2;">
         <span class="status-dot dot-green"></span><b>Groq API</b> — Connected<br>
-        <span class="status-dot dot-green"></span><b>LightGBM Surrogates</b> — Loaded (3 models)<br>
-        <span class="status-dot dot-green"></span><b>SKU Store</b> — 3,054 M5 series<br>
+        <span class="status-dot dot-green"></span><b>Surrogates</b> — LightGBM & CatBoost (6 models)<br>
+        <span class="status-dot dot-green"></span><b>SKU Store</b> — 9,147 M5 series (12,201 keys)<br>
         <span class="status-dot dot-green"></span><b>LangGraph</b> — ReAct agent ready
     </div>
     """, unsafe_allow_html=True)
@@ -197,8 +197,8 @@ with st.sidebar:
     st.markdown("""
     <div style="font-size:0.8rem; color:#8b949e; line-height:2.2;">
         <span class="badge badge-blue">LLM</span> Llama 3.3-70b · Groq<br>
-        <span class="badge badge-purple">ML</span> LightGBM MOIC surrogates<br>
-        <span class="badge badge-green">Graph</span> LangGraph ReAct · 12-step cap<br>
+        <span class="badge badge-purple">ML</span> LightGBM & CatBoost surrogates<br>
+        <span class="badge badge-green">Graph</span> LangGraph ReAct · 24-step cap<br>
         <span class="badge badge-blue">Data</span> M5 Walmart Forecasting
     </div>
     """, unsafe_allow_html=True)
@@ -210,8 +210,8 @@ with st.sidebar:
     example_queries = [
         ("SKU Analysis", "Analyse SKU_FAST_MOVING with R=7, L=3, TSL=0.95. Provide the full cost breakdown."),
         ("Lost Sales", "What are the expected lost sales for SKU_LUMPY with R=14, L=5, TSL=0.90?"),
-        ("Policy Comparison", "Compare R=7 vs R=14 for FOODS_1_001 with L=3 and TSL=0.95. Which minimises cost?"),
-        ("Slow Mover", "Run a full MOIC simulation for SKU_SLOW with R=30, L=7, TSL=0.99."),
+        ("Policy Comparison", "Compare R=7 vs R=14 for FOODS_1_001_CA with L=3 and TSL=0.95. Which minimises cost?"),
+        ("Slow Mover", "Run a full MOIC simulation for SKU_SLOW with R=30, L=7, TSL=0.99 using CatBoost."),
         ("Seasonal Risk", "Evaluate inventory risk for SKU_SEASONAL with R=10, L=4, TSL=0.98."),
     ]
 
@@ -225,7 +225,7 @@ with st.sidebar:
     with col_a:
         st.metric("Session Turns", st.session_state.turn_count)
     with col_b:
-        st.metric("SKU Catalogue", "3,054")
+        st.metric("SKU Catalogue", "9,147")
 
     if st.button("Clear Conversation", use_container_width=True):
         st.session_state.lc_messages = []
@@ -317,7 +317,7 @@ def run_agent(user_input: str):
             if "recursion" in err_msg.lower():
                 final_content = (
                     "> **Reasoning depth limit reached.**  \n"
-                    "The agent exhausted its 12-step cap on this query. "
+                    "The agent exhausted its 24-step cap on this query. "
                     "Try rephrasing or breaking the request into smaller steps."
                 )
             elif "rate_limit" in err_msg.lower() or "429" in err_msg:

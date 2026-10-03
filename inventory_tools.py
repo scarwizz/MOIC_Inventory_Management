@@ -64,10 +64,15 @@ class PolicySimulationInput(BaseModel):
 # ---------------------------------------------------------------------------
 
 _MODEL_DIR = Path(__file__).parent / "models"
-_PATHS = {
+_LGBM_PATHS = {
     "avg_inventory": _MODEL_DIR / "lgbm_avg_inventory.joblib",
     "lost_sales":    _MODEL_DIR / "lgbm_lost_sales.joblib",
     "num_orders":    _MODEL_DIR / "lgbm_num_orders.joblib",
+}
+_CATB_PATHS = {
+    "avg_inventory": _MODEL_DIR / "catb_AvgInventory.joblib",
+    "lost_sales":    _MODEL_DIR / "catb_LostSales.joblib",
+    "num_orders":    _MODEL_DIR / "catb_NumOrders.joblib",
 }
 
 
@@ -90,17 +95,19 @@ def _load_model(path: Path):
         return _ZeroPredictor()
 
 
-def load_moic_models() -> Dict[str, Any]:
-    """Load the three MOIC surrogate models (avg_inventory, lost_sales, num_orders).
+def load_moic_models() -> Dict[str, Dict[str, Any]]:
+    """Load both LightGBM and CatBoost MOIC surrogate models.
 
-    Falls back to a zero-predicting stub when model files are not present,
-    so the agent remains fully operational during development/testing.
+    Falls back to a zero-predicting stub when model files are not present.
     """
-    return {key: _load_model(path) for key, path in _PATHS.items()}
+    return {
+        "lightgbm": {key: _load_model(path) for key, path in _LGBM_PATHS.items()},
+        "catboost": {key: _load_model(path) for key, path in _CATB_PATHS.items()},
+    }
 
 
 # Module-level cache — pays the I/O cost once per process.
-_MODELS_CACHE: Dict[str, Any] = load_moic_models()
+_MODELS_CACHE: Dict[str, Dict[str, Any]] = load_moic_models()
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +121,7 @@ def simulate_policy_outcomes(
     r: int,
     l: int,
     tsl: float,
+    model_framework: str = "lightgbm",
 ) -> Dict[str, float]:
     """Predict inventory outcomes for a given policy using the pre-trained MOIC surrogate models.
 
@@ -132,11 +140,13 @@ def simulate_policy_outcomes(
         Lead time in days (user-supplied).
     tsl : float
         Target Service Level between 0.0 and 1.0 (user-supplied).
+    model_framework : str, optional
+        Surrogate engine: 'lightgbm' (fastest), 'catboost' (cost-optimized), or 'ensemble' (average). Defaults to 'lightgbm'.
 
     Returns
     -------
     dict
-        Keys: expected_avg_inventory, expected_lost_sales, expected_num_orders.
+        Keys: expected_avg_inventory, expected_lost_sales, expected_num_orders, model_used.
     """
     # Validate via Pydantic before running inference
     params = PolicySimulationInput(adi=adi, cv2=cv2, r=r, l=l, tsl=tsl)
@@ -158,10 +168,37 @@ def simulate_policy_outcomes(
                  "Risk_Period", "Policy_Interaction", "Demand_Profile"],
     )
 
+    framework = model_framework.lower().strip()
+    lgbm_models = _MODELS_CACHE["lightgbm"]
+    catb_models = _MODELS_CACHE["catboost"]
+
+    if framework == "catboost":
+        avg_inv = float(catb_models["avg_inventory"].predict(features)[0])
+        lost_sales = float(catb_models["lost_sales"].predict(features)[0])
+        num_orders = float(catb_models["num_orders"].predict(features)[0])
+        engine_used = "CatBoost"
+    elif framework == "ensemble":
+        l_inv = float(lgbm_models["avg_inventory"].predict(features)[0])
+        l_ls = float(lgbm_models["lost_sales"].predict(features)[0])
+        l_ord = float(lgbm_models["num_orders"].predict(features)[0])
+        c_inv = float(catb_models["avg_inventory"].predict(features)[0])
+        c_ls = float(catb_models["lost_sales"].predict(features)[0])
+        c_ord = float(catb_models["num_orders"].predict(features)[0])
+        avg_inv = (l_inv + c_inv) / 2.0
+        lost_sales = (l_ls + c_ls) / 2.0
+        num_orders = (l_ord + c_ord) / 2.0
+        engine_used = "Ensemble (LightGBM + CatBoost)"
+    else:
+        avg_inv = float(lgbm_models["avg_inventory"].predict(features)[0])
+        lost_sales = float(lgbm_models["lost_sales"].predict(features)[0])
+        num_orders = float(lgbm_models["num_orders"].predict(features)[0])
+        engine_used = "LightGBM"
+
     return {
-        "expected_avg_inventory": float(_MODELS_CACHE["avg_inventory"].predict(features)[0]),
-        "expected_lost_sales":    float(_MODELS_CACHE["lost_sales"].predict(features)[0]),
-        "expected_num_orders":    float(_MODELS_CACHE["num_orders"].predict(features)[0]),
+        "expected_avg_inventory": round(max(0.0, avg_inv), 4),
+        "expected_lost_sales":    round(max(0.0, lost_sales), 4),
+        "expected_num_orders":    round(max(0.0, num_orders), 4),
+        "model_used":             engine_used,
     }
 
 

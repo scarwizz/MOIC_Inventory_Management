@@ -39,7 +39,8 @@ from inventory_tools import simulate_policy_outcomes, calculate_financial_impact
 # ---------------------------------------------------------------------------
 TOOLS = [get_sku_profile, simulate_policy_outcomes, calculate_financial_impact]
 
-llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
+GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+llm = ChatGroq(model=GROQ_MODEL, temperature=0)
 llm_with_tools = llm.bind_tools(TOOLS, tool_choice="auto")
 
 # ---------------------------------------------------------------------------
@@ -49,12 +50,19 @@ SYSTEM_PROMPT = """\
 You are an expert AI Supply Chain Agent backed by the MOIC (Model-Independent Optimal Inventory Control) decision engine.
 You are strictly forbidden from guessing, estimating, or calculating any inventory metric yourself.
 
-Follow this exact workflow for every user query:
+Follow this workflow for every user query:
 1. Call `get_sku_profile` to retrieve the real ADI and CV2 for the requested SKU.
-2. Call `simulate_policy_outcomes` using the ADI and CV2 from step 1, plus the user's R, L, and TSL values. Default to R=7, L=3, TSL=0.95 if not specified.
+   - If the tool reports that the SKU is not found, stop, report this clearly to the user, and show the example valid SKUs returned.
+2. Call `simulate_policy_outcomes` using the retrieved ADI and CV2, plus the user's R, L, and TSL values.
+   - Default to R=7, L=3, TSL=0.95 if parameters are not specified.
+   - If the user specifies a model preference (e.g. LightGBM, CatBoost, or Ensemble), pass it to model_framework.
 3. If the user asks about costs or financial impact, call `calculate_financial_impact` using the simulation results from step 2.
 
-CRITICAL INSTRUCTION: Once you have received the result from `calculate_financial_impact`, you have everything you need. You MUST immediately synthesize the final answer for the user and STOP. Do NOT call any tools again for the same query.
+POLICY COMPARISONS & MULTI-SKU QUERIES:
+If the user asks to compare two policies (e.g., R=7 vs R=14) or compare two SKUs (e.g., SKU_SLOW vs SKU_TRENDING):
+- Execute the required profile, simulation, and cost steps for EACH scenario.
+- Once all scenarios have been simulated, synthesize a structured comparative table and clearly recommend the policy that minimizes total costs.
+- STOP calling tools once all comparative scenarios are evaluated.
 
 Present results in a structured, professional format with clear sections for SKU profile, simulation outcomes, and cost breakdown."""
 
@@ -100,10 +108,9 @@ builder.add_edge("tools", "agent")
 
 app = builder.compile()
 
-# Hard cap on graph recursion — prevents infinite tool-calling loops.
-# Each full round-trip (agent → tools → agent) costs 2 steps, so 12 allows
-# up to 6 tool calls before the graph forcibly terminates.
-GRAPH_CONFIG = {"recursion_limit": 12}
+# Cap on graph recursion — set to 24 to comfortably allow multi-policy comparisons
+# (e.g. 2 policies * 3 tools = 6 tool calls + 7 agent steps = 13 steps).
+GRAPH_CONFIG = {"recursion_limit": 24}
 
 # ---------------------------------------------------------------------------
 # 5.  Interactive CLI

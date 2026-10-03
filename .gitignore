@@ -101,3 +101,7 @@ desktop.ini
 *.swp
 *.log
 *.pid
+
+# ── Private / Local Documents ────────────────────────────────
+MOIC_Interview_Prep_Guide.md
+

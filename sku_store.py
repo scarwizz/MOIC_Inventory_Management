@@ -75,25 +75,37 @@ def _load_sku_database() -> Dict[str, Dict[str, float]]:
             df.columns = [c.strip().lower() for c in df.columns]
 
             id_col  = next((c for c in df.columns if c in {"id", "sku_id", "item_id"}), None)
+            state_col = next((c for c in df.columns if "state" in c), None)
             adi_col = next((c for c in df.columns if "adi" in c), None)
             cv2_col = next((c for c in df.columns if "cv2" in c or "cv_2" in c), None)
 
             if id_col and adi_col and cv2_col:
-                _SKU_DB = {
-                    str(row[id_col]): {
-                        "adi": float(row[adi_col]),
-                        "cv2": float(row[cv2_col]),
-                    }
-                    for _, row in df.iterrows()
-                }
+                new_db: Dict[str, Dict[str, float]] = {}
+                for _, row in df.iterrows():
+                    item = str(row[id_col]).strip()
+                    adi_val = float(row[adi_col])
+                    cv2_val = float(row[cv2_col])
+                    profile = {"adi": adi_val, "cv2": cv2_val}
+
+                    if state_col and pd.notna(row.get(state_col)):
+                        state = str(row[state_col]).strip()
+                        composite = f"{item}_{state}"
+                        new_db[composite] = profile
+                        new_db[composite.upper()] = profile
+
+                    if item not in new_db:
+                        new_db[item] = profile
+                        new_db[item.upper()] = profile
+
                 # Also inject mock archetypes so demo SKU names always resolve
-                _SKU_DB.update(_MOCK_SKU_DB)
-                print(f"[sku_store] Loaded {len(_SKU_DB):,} SKUs from CSV (+ {len(_MOCK_SKU_DB)} mock archetypes).")
+                new_db.update(_MOCK_SKU_DB)
+                _SKU_DB = new_db
+                print(f"[sku_store] Loaded {len(_SKU_DB):,} SKU keys from CSV (+ {len(_MOCK_SKU_DB)} mock archetypes).")
                 return _SKU_DB
             else:
                 print(
                     f"[sku_store] Warning: expected columns not found "
-                    f"(id={id_col}, adi={adi_col}, cv2={cv2_col}). "
+                    f"(id={id_col}, state={state_col}, adi={adi_col}, cv2={cv2_col}). "
                     "Falling back to mock data."
                 )
         except Exception as exc:
@@ -123,7 +135,7 @@ def get_sku_profile(sku_id: str) -> Dict[str, float]:
     Parameters
     ----------
     sku_id : str
-        The unique product identifier (e.g. 'SKU_FAST_MOVING', 'HOBBIES_1_CA').
+        The unique product identifier (e.g. 'SKU_FAST_MOVING', 'FOODS_1_001_CA', 'HOBBIES_1_001_CA').
 
     Returns
     -------
@@ -133,10 +145,14 @@ def get_sku_profile(sku_id: str) -> Dict[str, float]:
         to supply a valid identifier.
     """
     db = _SKU_DB
-    if sku_id not in db:
-        available = list(db.keys())[:10]
-        # Return the error as a string so the LLM can read it and apologize
-        return f"Error: SKU '{sku_id}' not found. Available SKUs (first 10): {available}"
+    clean_id = sku_id.strip()
+    if clean_id in db:
+        return db[clean_id]
+    if clean_id.upper() in db:
+        return db[clean_id.upper()]
+
+    available_samples = [k for k in list(db.keys()) if "_" in k][:8]
+    return f"Error: SKU '{sku_id}' not found. Examples of valid SKUs: {available_samples}"
         
     return db[sku_id]
 
