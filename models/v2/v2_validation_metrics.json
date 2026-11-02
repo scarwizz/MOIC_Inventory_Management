@@ -1,0 +1,48 @@
+{
+  "LGBM": {
+    "AvgInventory": {
+      "mae": 29.62023770936697,
+      "rmse": 95.59915831498373,
+      "r2": 0.4507477678937739,
+      "elapsed_seconds": 10.165596961975098,
+      "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\lgbm_avg_inventory.joblib"
+    },
+    "LostSales": {
+      "mae": 52.436001648466295,
+      "rmse": 176.78162147116578,
+      "r2": 0.25225636921549355,
+      "elapsed_seconds": 10.939997911453247,
+      "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\lgbm_lost_sales.joblib"
+    },
+    "NumOrders": {
+      "mae": 11.179282828062533,
+      "rmse": 29.76007964965927,
+      "r2": 0.9088980210748676,
+      "elapsed_seconds": 12.302077293395996,
+      "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\lgbm_num_orders.joblib"
+    }
+  },
+  "CATB": {
+    "AvgInventory": {
+      "mae": 34.33720712274535,
+      "rmse": 103.99912958356117,
+      "r2": 0.34998541373597103,
+      "elapsed_seconds": 26.986715078353882,
+      "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\catb_AvgInventory.joblib"
+    },
+    "LostSales": {
+      "mae": 61.77519561689583,
+      "rmse": 196.03668893780062,
+      "r2": 0.08049686611785878,
+      "elapsed_seconds": 25.977564811706543,
+      "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\catb_LostSales.joblib"
+    },
+    "NumOrders": {
+      "mae": 11.761258393248934,
+      "rmse": 30.845562354419812,
+      "r2": 0.902131030108979,
+      "elapsed_seconds": 27.440723419189453,
+      "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\catb_NumOrders.joblib"
+    }
+  }
+}

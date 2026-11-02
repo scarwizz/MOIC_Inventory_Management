@@ -1,0 +1,129 @@
+{
+  "primary_h001": {
+    "n_skus": 9147,
+    "cost_params": {
+      "h_annual": 0.01,
+      "b": 0.25,
+      "k": 0.5
+    },
+    "methods": {
+      "LGBM": {
+        "mean_cost": 2.8381218930733896,
+        "median_cost": 0.5571432422228418,
+        "std_cost": 10.949075190268571,
+        "p25_cost": 0.5219178607422555,
+        "p75_cost": 0.8597575202265372,
+        "mean_fill_rate": 0.9492159258689277,
+        "mean_avg_inventory": 94.99796624091906,
+        "mean_lost_sales": 9.166376708825974,
+        "mean_orders": 0.9473051273641632
+      },
+      "CATB": {
+        "mean_cost": 2.82082135334255,
+        "median_cost": 0.5571432422228418,
+        "std_cost": 10.626098282973139,
+        "p25_cost": 0.5215704786449444,
+        "p75_cost": 0.9011532738505088,
+        "mean_fill_rate": 0.9500964160862586,
+        "mean_avg_inventory": 94.19264250411547,
+        "mean_lost_sales": 9.103800047825283,
+        "mean_orders": 0.9452279435880616
+      },
+      "TO": {
+        "mean_cost": 1.3441756787567483,
+        "median_cost": 0.5213015565693789,
+        "std_cost": 6.065029268583927,
+        "p25_cost": 0.5083964407211581,
+        "p75_cost": 0.5614722188018371,
+        "mean_fill_rate": 0.9819665878893309,
+        "mean_avg_inventory": 54.34750410919004,
+        "mean_lost_sales": 3.2604461343089577,
+        "mean_orders": 0.9747458183010823
+      },
+      "FSH": {
+        "mean_cost": 4.227423302526313,
+        "median_cost": 2.0228411259751193,
+        "std_cost": 9.501220904795694,
+        "p25_cost": 2.0065573311908844,
+        "p75_cost": 2.978094055943227,
+        "mean_fill_rate": 0.9427322107746249,
+        "mean_avg_inventory": 27.542628230535954,
+        "mean_lost_sales": 9.633312658393356,
+        "mean_orders": 3.595933092817317
+      }
+    },
+    "head_to_head_CATB_vs_LGBM": {
+      "relative_cost_reduction": 0.006095770506919628,
+      "catb_strictly_cheaper_count": 1692,
+      "catb_strictly_cheaper_prop": 0.1849786815349295,
+      "lgbm_strictly_cheaper_count": 1262,
+      "lgbm_strictly_cheaper_prop": 0.13796873291789657,
+      "identical_count": 6193,
+      "identical_prop": 0.677052585547174
+    }
+  },
+  "retail_h020": {
+    "n_skus": 9147,
+    "cost_params": {
+      "h_annual": 0.2,
+      "b": 0.25,
+      "k": 0.5
+    },
+    "methods": {
+      "LGBM": {
+        "mean_cost": 4.222749784584868,
+        "median_cost": 1.551405355466705,
+        "std_cost": 11.482678671700361,
+        "p25_cost": 0.9617601855792397,
+        "p75_cost": 3.2818994001350283,
+        "mean_fill_rate": 0.9492159258689277,
+        "mean_avg_inventory": null,
+        "mean_lost_sales": null,
+        "mean_orders": null
+      },
+      "CATB": {
+        "mean_cost": 4.193711375594315,
+        "median_cost": 1.5406649116590962,
+        "std_cost": 11.173901452988735,
+        "p25_cost": 0.957775406646874,
+        "p75_cost": 3.234063983087983,
+        "mean_fill_rate": 0.9500964160862586,
+        "mean_avg_inventory": null,
+        "mean_lost_sales": null,
+        "mean_orders": null
+      },
+      "TO": {
+        "mean_cost": 2.0250501064840605,
+        "median_cost": 0.9343171536848124,
+        "std_cost": 6.19543325670892,
+        "p25_cost": 0.6843327933972312,
+        "p75_cost": 1.6115961214137455,
+        "mean_fill_rate": 0.9819789607473511,
+        "mean_avg_inventory": null,
+        "mean_lost_sales": null,
+        "mean_orders": null
+      },
+      "FSH": {
+        "mean_cost": 4.628866541393303,
+        "median_cost": 2.384866368310309,
+        "std_cost": 9.645006142836127,
+        "p25_cost": 2.1357648349121368,
+        "p75_cost": 3.5338357146614934,
+        "mean_fill_rate": 0.9427322107746249,
+        "mean_avg_inventory": null,
+        "mean_lost_sales": null,
+        "mean_orders": null
+      }
+    },
+    "head_to_head_CATB_vs_LGBM": {
+      "relative_cost_reduction": 0.006876658687321953,
+      "catb_strictly_cheaper_count": 1689,
+      "catb_strictly_cheaper_prop": 0.18465070514922927,
+      "lgbm_strictly_cheaper_count": 1267,
+      "lgbm_strictly_cheaper_prop": 0.13851536022739697,
+      "identical_count": 6191,
+      "identical_prop": 0.6768339346233738
+    }
+  },
+  "elapsed_seconds": 292.52231526374817
+}
