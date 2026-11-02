@@ -102,6 +102,12 @@ desktop.ini
 *.log
 *.pid
 
+# ── Project restructure & archives ──────────────────────────
+archive/
+data/raw/
+models/v1_archived/
+*.joblib
+
 # ── Private / Local Documents ────────────────────────────────
 MOIC_Interview_Prep_Guide.md
 
