@@ -186,15 +186,25 @@ def test_hand_calculated_scenario():
     print("  -> PASSED: Exact match between manual derivation and simulator output!\n")
 
 
+import unittest
+
+
+class TestSimulator(unittest.TestCase):
+    def test_stock_flow_conservation(self):
+        test_stock_flow_conservation()
+
+    def test_exact_arrival_timing(self):
+        test_exact_arrival_timing()
+
+    def test_invariant_inventory_zero_demand_no_orders(self):
+        test_invariant_inventory_zero_demand_no_orders()
+
+    def test_outstanding_orders_zero_demand(self):
+        test_outstanding_orders_zero_demand()
+
+    def test_hand_calculated_scenario(self):
+        test_hand_calculated_scenario()
+
+
 if __name__ == "__main__":
-    print("=" * 70)
-    print("RUNNING VERIFICATION TEST SUITE FOR CORRECTED INVENTORY SIMULATOR")
-    print("=" * 70 + "\n")
-    test_stock_flow_conservation()
-    test_exact_arrival_timing()
-    test_invariant_inventory_zero_demand_no_orders()
-    test_outstanding_orders_zero_demand()
-    test_hand_calculated_scenario()
-    print("=" * 70)
-    print("ALL 5 UNIT & SANITY TESTS PASSED SUCCESSFULLY!")
-    print("=" * 70)
+    unittest.main()

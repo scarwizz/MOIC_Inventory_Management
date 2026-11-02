@@ -1,47 +1,65 @@
 {
   "LGBM": {
     "AvgInventory": {
-      "mae": 29.62023770936697,
-      "rmse": 95.59915831498373,
-      "r2": 0.4507477678937739,
-      "elapsed_seconds": 10.165596961975098,
+      "mae": 42.378130096979994,
+      "rmse": 169.2344462486727,
+      "r2": 0.20320794494608052,
+      "heldout_sku_val_mae": 38.99968232491711,
+      "heldout_sku_val_rmse": 124.98424362004315,
+      "heldout_sku_val_r2": 0.3386172920688435,
+      "elapsed_seconds": 12.747464656829834,
       "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\lgbm_avg_inventory.joblib"
     },
     "LostSales": {
-      "mae": 52.436001648466295,
-      "rmse": 176.78162147116578,
-      "r2": 0.25225636921549355,
-      "elapsed_seconds": 10.939997911453247,
+      "mae": 13.86458922364702,
+      "rmse": 65.826500065691,
+      "r2": -0.03203847259243764,
+      "heldout_sku_val_mae": 13.250976536429024,
+      "heldout_sku_val_rmse": 48.57961185530015,
+      "heldout_sku_val_r2": -0.05974316453784434,
+      "elapsed_seconds": 11.910781860351562,
       "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\lgbm_lost_sales.joblib"
     },
     "NumOrders": {
-      "mae": 11.179282828062533,
-      "rmse": 29.76007964965927,
-      "r2": 0.9088980210748676,
-      "elapsed_seconds": 12.302077293395996,
+      "mae": 1.2414334239260487,
+      "rmse": 3.412874143736422,
+      "r2": 0.7809162156923426,
+      "heldout_sku_val_mae": 1.2067993670874502,
+      "heldout_sku_val_rmse": 3.3116047526346946,
+      "heldout_sku_val_r2": 0.7961448299078325,
+      "elapsed_seconds": 12.386306047439575,
       "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\lgbm_num_orders.joblib"
     }
   },
   "CATB": {
     "AvgInventory": {
-      "mae": 34.33720712274535,
-      "rmse": 103.99912958356117,
-      "r2": 0.34998541373597103,
-      "elapsed_seconds": 26.986715078353882,
+      "mae": 43.14516178254419,
+      "rmse": 172.1435559767889,
+      "r2": 0.1755790763565186,
+      "heldout_sku_val_mae": 40.05831669421038,
+      "heldout_sku_val_rmse": 129.29531894367344,
+      "heldout_sku_val_r2": 0.2922043210151555,
+      "elapsed_seconds": 46.522658586502075,
       "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\catb_AvgInventory.joblib"
     },
     "LostSales": {
-      "mae": 61.77519561689583,
-      "rmse": 196.03668893780062,
-      "r2": 0.08049686611785878,
-      "elapsed_seconds": 25.977564811706543,
+      "mae": 13.518399778785634,
+      "rmse": 65.89151129164891,
+      "r2": -0.034077992172802274,
+      "heldout_sku_val_mae": 12.932394463133287,
+      "heldout_sku_val_rmse": 48.59016920470026,
+      "heldout_sku_val_r2": -0.060203822584912414,
+      "elapsed_seconds": 60.18596339225769,
       "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\catb_LostSales.joblib"
     },
     "NumOrders": {
-      "mae": 11.761258393248934,
-      "rmse": 30.845562354419812,
-      "r2": 0.902131030108979,
-      "elapsed_seconds": 27.440723419189453,
+      "mae": 1.2694838925147391,
+      "rmse": 3.460555047116066,
+      "r2": 0.7747518609131626,
+      "heldout_sku_val_mae": 1.2344886484702728,
+      "heldout_sku_val_rmse": 3.3563771163794205,
+      "heldout_sku_val_r2": 0.7905953897872486,
+      "elapsed_seconds": 55.91928434371948,
       "saved_path": "C:\\Users\\ARPIT SINGH\\OneDrive\\Desktop\\BEProject\\models\\v2\\catb_NumOrders.joblib"
     }
   }

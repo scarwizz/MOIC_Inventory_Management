@@ -36,7 +36,12 @@ class SKUProfileInput(BaseModel):
 # 2.  Internal database loader
 # ---------------------------------------------------------------------------
 
-_FEATURES_CSV_PATH = Path(__file__).parent / "Dataset" / "m5_demand_features.csv"
+_PROJECT_ROOT = Path(__file__).resolve().parent
+_CANDIDATE_PATHS = [
+    _PROJECT_ROOT / "data" / "processed" / "m5_demand_features.csv",
+    _PROJECT_ROOT / "Dataset" / "m5_demand_features.csv",
+]
+_FEATURES_CSV_PATH = next((p for p in _CANDIDATE_PATHS if p.exists()), _CANDIDATE_PATHS[0])
 
 # Fallback mock catalogue — representative demand archetypes from the M5 dataset.
 _MOCK_SKU_DB: Dict[str, Dict[str, float]] = {

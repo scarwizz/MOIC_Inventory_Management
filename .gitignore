@@ -107,6 +107,9 @@ archive/
 data/raw/
 models/v1_archived/
 *.joblib
+catboost_info/
+audit_fixed/
+data/processed/*.csv
 
 # ── Private / Local Documents ────────────────────────────────
 MOIC_Interview_Prep_Guide.md

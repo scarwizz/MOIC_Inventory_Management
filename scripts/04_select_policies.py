@@ -3,7 +3,7 @@
 Select optimal inventory policies (R*, L*, TSL*) for all 9,147 SKUs
 using trained v2 surrogate models.
 Evaluates the 75-policy grid and minimizes predicted total cost:
-C = (h/365) * AvgInv * 365 + b * LostSales + k * NumOrders (h=0.01, b=0.25, k=0.50)
+C = (h/365) * AvgInv * 28 + b * LostSales + k * NumOrders (h=0.01, b=0.25, k=0.50)
 
 Outputs saved to: data/processed/optimal_policies_v2_{MODEL}.csv
 """
@@ -88,6 +88,13 @@ def select_policies(
     if verbose:
         print(f"Loaded {n_skus:,} SKUs.")
 
+    if "history_end_day" in features_df.columns:
+        assert (features_df["history_end_day"] == 1550).all(), (
+            f"Features contain non-causal history_end_day values: {features_df['history_end_day'].unique()}"
+        )
+    else:
+        print("[WARNING] 'history_end_day' column not found in features. Ensure features were computed as of d_1550.")
+
     all_optimal = {}
 
     for m_type in model_types:
@@ -99,7 +106,7 @@ def select_policies(
 
         if verbose:
             print(f"\n==================================================")
-            print(f"Optimizing policies using {m_type} surrogates...")
+            print(f"Optimizing policies using {m_type} surrogates (28-day horizon)...")
             print(f"==================================================")
 
         t0 = time.time()
@@ -109,7 +116,7 @@ def select_policies(
             h_annual=0.01,
             b=0.25,
             k=0.50,
-            horizon_days=365,
+            horizon_days=28,
         )
         elapsed = time.time() - t0
 

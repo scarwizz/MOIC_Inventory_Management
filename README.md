@@ -15,7 +15,7 @@
 
 The **MOIC (Model-Independent Optimal Inventory Control) Supply Chain Agent** is a dual-identity system that combines a full Machine Learning pipeline with an AI Agent orchestration layer:
 
-1. **ML Pipeline** — Runs (R, s, S) inventory policy simulations over 686,025 SKU-policy observations from the M5 Walmart dataset, trains LightGBM and CatBoost surrogate models on 8 engineered features, and exports them as serialised predictors.
+1. **ML Pipeline** — Runs stock-flow conservation verified (R, s, S) inventory policy simulations over 2,058,075 SKU-policy observations across 3 causal origins from the M5 Walmart dataset, trains LightGBM and CatBoost surrogate models on 8 engineered features, and exports them as serialised predictors.
 2. **AI Agent** — Wraps the surrogates inside a LangGraph ReAct agent (Llama 3.3-70b on Groq) so supply chain managers can query inventory costs in natural language and receive grounded, hallucination-proof answers.
 3. **Streamlit UI** — Enterprise dark-mode dashboard that renders the full agent execution trace in real time.
 
@@ -39,6 +39,7 @@ The **MOIC (Model-Independent Optimal Inventory Control) Supply Chain Agent** is
 - [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
 - [Local Installation](#local-installation)
+- [Reproducibility & Pipeline Execution](#reproducibility--pipeline-execution)
 - [Running the App](#running-the-app)
 - [Environment Variables](#environment-variables)
 - [Usage Examples](#usage-examples)
@@ -63,17 +64,18 @@ Given a SKU's historical demand profile and an inventory policy (R, L, TSL), pre
 | Source | Walmart M5 Forecasting Accuracy Competition |
 | Raw series | 30,490 item-store time series |
 | Aggregation level | Level 11 (item × state): **9,147 series** |
-| History length | 1,913 days (~5.25 years) |
-| Simulation window | Last 365 days (days 1549–1913) |
+| Total history length | 1,913 days (~5.25 years) |
+| Training / Validation Origins | `train_921` (scoring d_982–d_1009), `train_1009` (scoring d_1070–d_1097), `val_1097` (scoring d_1158–d_1185) |
+| Out-of-Sample Eval Origin | `eval_1550` (calib d_1186–d_1550, warmup d_1551–d_1610, scoring d_1611–d_1638) |
 | Policy grid | R ∈ [1,30], L ∈ [1,30], TSL ∈ {0.90, 0.95, 0.99} → **75 policies** |
-| Training observations | 9,147 × 75 = **686,025 rows** |
+| Total Simulation Observations | 9,147 × 75 × 3 origins = **2,058,075 rows** (1,372,050 train / 686,025 val) |
 
-**Preprocessing Steps:**
-1. **Aggregation** — Item-level store sales grouped by `(item_id, state_id)` to eliminate store noise.
-2. **Downcast** — Integer and float columns reduced to the smallest safe dtype (int8/float32) to cut memory by ~60%.
-3. **Demand statistics** — Per-series Average Inter-Demand Interval (ADI) and Squared Coefficient of Variation (CV²) computed over all 1,913 days.
-4. **Simulation labels** — For each of the 686,025 (series, policy) pairs, a discrete-event (R, s, S) lost-sales simulation produces the three regression targets.
-5. **No data leakage** — Simulation runs exclusively on days 1549–1913; ADI/CV² are computed from the full history before that window.
+**Preprocessing & Strict Causality Protocol:**
+1. **Aggregation** — Item-level store sales grouped by `(item_id, state_id)` to eliminate store-level noise.
+2. **Downcast** — Integer and float columns reduced to the smallest safe dtype (`int16`/`float32`) to reduce memory.
+3. **Causal Demand Statistics** — Per-series ADI and CV² computed strictly over history $\le \text{history\_end\_day}$ for each origin (evaluation features strictly as of day 1550).
+4. **Zero-Leakage Guarantee** — All training and validation simulation target windows finish by day 1185 or earlier. Evaluation calibration starts on day 1186. Not a single training row or feature sees day 1186+.
+5. **Discrete-Event Simulation Labels** — For each SKU-policy observation across the 3 causal origins, a stock-flow conservation verified (R, s, S) discrete-event simulator produces the three regression targets over a 60-day warm-up and 28-day scoring horizon.
 
 ---
 
@@ -134,50 +136,76 @@ catb_params = {
 }
 ```
 
-**Training Infrastructure:**
-- Kaggle Notebook with **P100 GPU** (LightGBM GPU mode via OpenCL)
-- CatBoost trained on CPU (GPU MAE is not implemented for the metric logging path)
-- 80/20 train/validation split (`random_state=42`) — 548,820 training rows, 137,205 validation rows
-- Three separate models per framework, one per target variable
+**Training Infrastructure & Validation Protocol:**
+- Kaggle Notebook with **P100 GPU** (LightGBM GPU mode via OpenCL) / CPU fallback
+- CatBoost trained on CPU (loss function `MAE`)
+- Strict chronological validation: 1,372,050 training rows (`train_921`, `train_1009`) and 686,025 validation rows (`val_1097`) with non-overlapping 88-day target windows and purged boundary labels
+- Grouped-SKU held-out evaluation: 80/20 SKU split (7,318 train SKUs / 1,829 unseen test SKUs)
+- Three separate models per framework, one per target variable (`AvgInventory`, `LostSales`, `NumOrders`)
 
 ---
 
 ### 4. Evaluation Metrics & Results
 
-All surrogate metrics computed on the **20% hold-out validation set (137,205 rows)** using labels generated by the conservation-verified discrete-event simulator. Full audit and fix details are documented in [`docs/AUDIT_CHANGELOG.md`](docs/AUDIT_CHANGELOG.md).
+All surrogate metrics are computed on the **chronological validation set (`val_1097`: 686,025 rows)** and the **grouped-SKU holdout (1,829 unseen SKUs)** using labels generated by the conservation-verified discrete-event simulator over an aligned 28-day scoring horizon. Full audit and fix details are documented in [`docs/AUDIT_CHANGELOG.md`](docs/AUDIT_CHANGELOG.md).
 
-#### Surrogate Model Validation Metrics (v2)
+#### Surrogate Model Validation Metrics
 
-| Model | Target Metric | Validation MAE | Validation RMSE | $R^2$ Score | Interpretation / Note |
-|-------|---------------|----------------|-----------------|-----------|------------------------|
-| **LightGBM** | `AvgInventory` | **29.62** | **95.60** | **0.4507** | Lowest inventory error across all series |
-| **LightGBM** | `LostSales` | **52.44** | **176.78** | **0.2523** | **-92% error** vs v1 flawed labels (659.70) |
-| **LightGBM** | `NumOrders` | **11.18** | **29.76** | **0.9089** | High fidelity on recurring replenishment counts |
-| **CatBoost** | `AvgInventory` | 34.34 | 104.00 | 0.3500 | Robust performance on extreme intermittency |
-| **CatBoost** | `LostSales` | 61.78 | 196.04 | 0.0805 | **-94% error** vs v1 flawed labels (1,091.70) |
-| **CatBoost** | `NumOrders` | 11.76 | 30.85 | 0.9021 | **-82% error** vs v1 GPU bug (66.90 MAE / 146.2 RMSE) |
+Evaluated on the chronological validation set (`val_1097`, 686,025 rows) and grouped-SKU held-out set (1,829 unseen SKUs):
 
-#### Hold-Out Policy Optimization Results (9,147 Level 11 SKUs)
+| Model | Target Metric | Chronological Val MAE | Chronological Val RMSE | Chronological $R^2$ | Held-out SKU MAE | Held-out SKU $R^2$ |
+|-------|---------------|-----------------------|------------------------|---------------------|------------------|-------------------|
+| **LightGBM** | `AvgInventory` | **42.38** | **169.23** | **0.2032** | 39.00 | 0.3386 |
+| **LightGBM** | `LostSales` | **13.86** | **65.83** | -0.0320 | 13.25 | -0.0597 |
+| **LightGBM** | `NumOrders` | **1.24** | **3.41** | **0.7809** | 1.21 | 0.7961 |
+| **CatBoost** | `AvgInventory` | 43.15 | 172.14 | 0.1756 | 40.06 | 0.2922 |
+| **CatBoost** | `LostSales` | 13.52 | 65.89 | -0.0341 | 12.93 | -0.0602 |
+| **CatBoost** | `NumOrders` | 1.27 | 3.46 | 0.7748 | 1.23 | 0.7906 |
 
-Policies were selected across the 75-policy grid and evaluated on a held-out demand window (60-day warm-up, 28-day evaluation window) under strict stock-flow conservation:
+*(Note: Validation targets are scored over a 28-day window matching the scoring horizon, so NumOrders and LostSales scales reflect 28 days of replenishment).*
 
-| Policy / Selection Method | Mean Total Cost ($) | Median Cost ($) | Std Cost ($) | Mean Unit Fill Rate | Relative Cost vs. FSH Baseline |
+#### Clean Out-of-Sample Evaluation Results (9,147 Level 11 SKUs)
+
+Policies were selected using surrogate predictions strictly as of day 1550 and evaluated on the hold-out scoring window (days 1611–1638) alongside heuristic baselines, a per-SKU history-tuned baseline (HTB), and an empirical hindsight oracle:
+
+**Primary Cost Parameters ($h_{\text{annual}} = 0.01, b = \$0.25, k = \$0.50$):**
+
+| Policy / Selection Method | Mean Total Cost ($) | Median Cost ($) | Std Cost ($) | Unit Fill Rate | Mean SKU Fill Rate | % SKUs Beating FSH | % SKUs Beating HTB |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **MOIC LightGBM** | **$4.81** | **$0.55** | $16.84 | **85.94%** | 91.00% | **73.25%** | 28.77% |
+| **MOIC CatBoost** | **$4.91** | **$0.55** | $17.06 | **85.64%** | 90.88% | **72.75%** | 28.58% |
+| **History-Tuned Baseline (HTB)** | $3.96 | $0.56 | $14.33 | 89.52% | 92.60% | 76.54% | — |
+| **Fixed Standard Heuristic (FSH)** | $4.23 | $2.02 | $9.50 | 92.14% | 94.27% | — | 23.46% |
+| **Hindsight Grid Oracle (ORACLE)** | $1.34 | $0.52 | $6.07 | 97.34% | 98.20% | 85.59% | 74.38% |
+
+*(Unit Fill Rate is defined as total units satisfied / total units demanded across the 28-day evaluation window. Hindsight Oracle represents the empirical best configuration from grid search in hindsight across the 75 policies).*
+
+#### Paired Bootstrap 95% Confidence Intervals (Mean Cost Differences across SKUs)
+
+- **CatBoost vs. LightGBM**: Mean Diff = $+0.0936 \pm 0.0389$ | 95% CI: $[+\$0.0559, +\$0.1338]$
+- **LightGBM vs. FSH**: Mean Diff = $+0.5863 \pm 0.1845$ | 95% CI: $[+\$0.4044, +\$0.7734]$
+- **LightGBM vs. HTB**: Mean Diff = $+0.8551 \pm 0.1619$ | 95% CI: $[+\$0.6962, +\$1.0201]$
+- **CatBoost vs. FSH**: Mean Diff = $+0.6799 \pm 0.1893$ | 95% CI: $[+\$0.4927, +\$0.8713]$
+- **CatBoost vs. HTB**: Mean Diff = $+0.9487 \pm 0.1619$ | 95% CI: $[+\$0.7920, +\$1.1158]$
+
+#### Retail Holding Cost Sensitivity ($h_{\text{annual}} = 0.20, b = \$0.25, k = \$0.50$)
+
+| Policy / Selection Method | Mean Total Cost ($) | Median Cost ($) | Std Cost ($) | Unit Fill Rate | Mean SKU Fill Rate |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **MOIC CatBoost (v2)** | **$2.82** | **$0.56** | $10.63 | **95.01%** | **-33.3% lower cost** |
-| **MOIC LightGBM (v2)** | **$2.84** | **$0.56** | $10.95 | **94.92%** | **-32.9% lower cost** |
-| **True Optimal (Oracle)** | $1.34 | $0.52 | $6.07 | 98.20% | Theoretical ceiling |
-| **Fixed Standard Heuristic (FSH)** | $4.23 | $2.02 | $9.50 | 94.27% | Baseline ($R=7, L=3, \text{TSL}=0.95$) |
+| **MOIC LightGBM** | **$5.66** | **$1.38** | $17.23 | **85.94%** | 91.00% |
+| **MOIC CatBoost** | **$5.73** | **$1.38** | $17.46 | **85.64%** | 90.88% |
+| **History-Tuned Baseline (HTB)** | $4.42 | $1.39 | $11.49 | 90.64% | 92.72% |
+| **Fixed Standard Heuristic (FSH)** | $4.63 | $2.38 | $9.65 | 92.14% | 94.27% |
+| **Hindsight Grid Oracle (ORACLE)** | $2.03 | $0.93 | $6.20 | 97.34% | 98.20% |
 
-> **Audit Insight — Resolution of the "43% Lower Cost" Claim:**  
-> In the original v1 Kaggle pipeline, missing replenishment arrivals caused models to collapse into a boundary trap ($R=30, L=30, \text{TSL}=0.99$ for 100% of SKUs) because oversized initial buffers avoided unreplenished stockouts. Re-evaluating and retraining under the corrected discrete-event simulator reveals that CatBoost and LightGBM achieve essentially identical hold-out performance (**$2.82 vs $2.84, a 0.61% difference** with 67.7% identical policies). Both deliver a genuine, defensible **33.3% cost reduction** compared to the replenishing heuristic baseline with a **95.0% unit fill rate**.
+#### Analytical Insights: Clean Out-of-Sample Performance
 
-#### Retail Holding Cost Sensitivity ($h = 0.20/\text{year}$)
-
-| Policy / Selection Method | Mean Total Cost ($) | Median Cost ($) | Std Cost ($) | Mean Unit Fill Rate |
-| :--- | :--- | :--- | :--- | :--- |
-| **MOIC CatBoost (v2)** | **$4.19** | **$1.54** | $11.17 | **95.01%** |
-| **MOIC LightGBM (v2)** | **$4.22** | **$1.55** | $11.48 | **94.92%** |
-| **Fixed Standard Heuristic (FSH)** | $4.63 | $2.38 | $9.65 | 94.27% |
+1. **Median Cost Reduction vs. FSH:**  
+   The Fixed Standard Heuristic ($R=7, L=3, \text{TSL}=0.95$) places recurring orders every 7 days regardless of demand velocity, accumulating excess holding buffers and ordering fees ($k=\$0.50$). The ML surrogate policies tailor review periods to each SKU's intermittency (ADI/CV²), beating FSH on **73.25% of all SKUs** and reducing median cost from **$2.02 to $0.55** (a ~73% reduction).
+2. **Mean Cost Dynamics:**  
+   On intermittent and highly volatile items, minor under-predictions of safety stock trigger lost-sales penalties ($b=\$0.25/\text{unit}$) during unpredicted demand surges. This inflates the right-tail cost distribution (standard deviation of $16.84 for LGBM vs $9.50 for FSH), resulting in a higher mean cost ($4.81–$4.91 vs $4.23).
+3. **Surrogate vs. History-Tuned Baseline (HTB):**  
+   The History-Tuned Baseline performs an empirical grid backtest strictly over the historical period of that exact series (days 1098–1550). HTB achieves the lowest causal mean cost ($3.96) and highest causal unit fill rate (89.52%), beating the ML surrogates on ~71% of SKUs. This demonstrates that while 8 cross-SKU aggregate features provide fast sub-millisecond inference for agent tool calling, per-SKU empirical history captures item-specific order-lead dynamics that summary features partially smooth out.
 
 #### Feature Importance (LightGBM — AvgInventory model)
 
@@ -477,21 +505,54 @@ models/
 └── catb_NumOrders.joblib
 ```
 
-To retrain from scratch or reproduce the offline ML pipeline, execute the cells in `notebooks/MAIN_NOTEBOOK.ipynb` on Kaggle (with GPU acceleration).
+### Reproducibility & Pipeline Execution
 
-### Dataset Setup
+The experiment design enforces strict origin-based causality (`history_end_day` inclusive, zero future demand leakage into features or labels) configured in [`src/config.py`](src/config.py) using `RANDOM_SEED = 42`.
 
-Only `m5_demand_features.csv` is required to run the live agent and Streamlit dashboard:
-
-```text
-Dataset/
-├── m5_demand_features.csv       <- Required for SKU demand profile lookup (ADI & CV²)
-├── sales_train_validation.csv   <- Only needed if re-running notebooks/MAIN_NOTEBOOK.ipynb
-├── calendar.csv                 <- Only needed if re-running notebooks/MAIN_NOTEBOOK.ipynb
-└── sell_prices.csv              <- Only needed if re-running notebooks/MAIN_NOTEBOOK.ipynb
+#### 1. Dataset Setup
+To run benchmarks with the committed 100-SKU sample dataset:
+```bash
+python scripts/download_data.py
+```
+To run on the full Walmart M5 competition dataset, download `sales_train_validation.csv` into `Dataset/` or `data/raw/` via Kaggle CLI:
+```bash
+kaggle competitions download -c m5-forecasting-accuracy
 ```
 
----
+#### 2. End-to-End Pipeline Execution
+Execute the numbered scripts in sequence:
+```bash
+# Step 1: Aggregate to Level 11 and compute causal demand features (as of day 1550)
+python scripts/01_prepare_data.py
+
+# Step 2: Generate 2.05M causal simulation labels across 3 non-overlapping origins
+python scripts/02_generate_labels.py
+
+# Step 3: Train surrogate models via chronological validation and grouped-SKU holdout
+python scripts/03_train_surrogates.py
+
+# Step 4: Select cost-minimizing policies on aligned 28-day horizon as of day 1550
+python scripts/04_select_policies.py
+
+# Step 5: Run clean out-of-sample evaluation across 5 policies with paired bootstrap CIs
+python scripts/05_evaluate.py
+```
+
+#### 3. Gitignored Files & Regeneration Guide
+The following generated artifacts are excluded from Git to maintain a clean repository:
+- `data/processed/*.csv`: Processed sales (`sales_train_level_11.csv`), demand features (`m5_demand_features.csv`), 2.05M simulation training records (`ml_training_data_v2_corrected.csv`), and per-SKU policy CSVs (`optimal_policies_v2_*.csv`, `evaluation_results_v2.csv`). Regenerated via `scripts/01_prepare_data.py`, `scripts/02_generate_labels.py`, `scripts/04_select_policies.py`, and `scripts/05_evaluate.py`.
+- `models/*.joblib`, `models/v2/*.joblib`: Trained LightGBM and CatBoost surrogate model binaries. Regenerated via `scripts/03_train_surrogates.py`.
+- `catboost_info/`: Ephemeral CatBoost training telemetry.
+- `data/raw/`: Raw competition files from Kaggle.
+
+Tracked evaluation artifacts and metadata:
+- `data/sample_sales_level_11.csv`: 100-SKU sample sales dataset for testing without full M5 data.
+- `models/v2/split_definition.json`: Complete chronological and grouped-SKU split definition.
+- `models/v2/v2_validation_metrics.json`: Surrogate model chronological and holdout validation scores.
+- `data/processed/evaluation_summary_v2.json`: Clean out-of-sample evaluation metrics, win rates, and bootstrap 95% CIs.
+
+#### 4. Out-of-Sample Empirical Note
+Out-of-sample evaluation confirms that while ML surrogate policies reduce median cost by 72.6% over fixed heuristics ($0.55 vs $2.02) and win on 73.25% of SKUs, they do **not** beat the causal History-Tuned Baseline (HTB) on mean cost ($4.81/$4.91 vs $3.96) due to right-tail lost-sales penalties on highly volatile, intermittent series.
 
 ## Running the App
 

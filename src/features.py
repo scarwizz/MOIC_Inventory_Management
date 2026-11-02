@@ -4,7 +4,7 @@ Feature engineering functions for MOIC Inventory Management.
 Computes time-series characteristics (ADI, CV2) and surrogate model features.
 """
 
-from typing import Union, Dict, Any, Tuple
+from typing import Union, Dict, Any, Tuple, Optional
 import numpy as np
 import pandas as pd
 
@@ -18,6 +18,60 @@ FEATURE_COLUMNS = [
     "Policy_Interaction",
     "Demand_Profile",
 ]
+
+
+def demand_features(
+    series: Union[pd.Series, np.ndarray, pd.DataFrame, list],
+    history_end_day: int,
+    history_start_day: Optional[int] = None,
+) -> Dict[str, float]:
+    """Calculate ADI and CV2 demand features using ONLY days <= history_end_day (inclusive).
+
+    Convention: history_end_day is inclusive. Days > history_end_day are NEVER read.
+    If history_start_day is provided, restricts to history_start_day <= day <= history_end_day.
+
+    Parameters
+    ----------
+    series : pd.Series, np.ndarray, pd.DataFrame, or list
+        Daily demand series.
+    history_end_day : int
+        Last day of history to include (inclusive).
+    history_start_day : Optional[int]
+        Optional earliest day of history to include (inclusive).
+
+    Returns
+    -------
+    Dict[str, float]
+        {'ADI': float, 'CV2': float}
+    """
+    if isinstance(series, pd.DataFrame):
+        if len(series) == 1:
+            series = series.iloc[0]
+        else:
+            raise ValueError("demand_features expects a single series or 1-row DataFrame")
+
+    if isinstance(series, pd.Series):
+        d_cols = [c for c in series.index if isinstance(c, str) and c.startswith("d_") and c[2:].isdigit()]
+        if d_cols:
+            valid_cols = []
+            for c in d_cols:
+                day_num = int(c[2:])
+                if day_num <= history_end_day:
+                    if history_start_day is None or day_num >= history_start_day:
+                        valid_cols.append((day_num, c))
+            valid_cols.sort(key=lambda x: x[0])
+            vals = series[[c for _, c in valid_cols]].values.astype(float)
+            return calculate_ts_features(vals)
+        else:
+            vals = series.values.astype(float)
+    elif isinstance(series, (list, tuple)):
+        vals = np.asarray(series, dtype=float)
+    else:
+        vals = np.asarray(series, dtype=float)
+
+    start_idx = 0 if history_start_day is None else max(0, history_start_day - 1)
+    end_idx = min(len(vals), history_end_day)
+    return calculate_ts_features(vals[start_idx:end_idx])
 
 
 def calculate_ts_features(series: Union[pd.Series, np.ndarray]) -> Dict[str, float]:
@@ -80,11 +134,11 @@ def engineer_surrogate_features(
     - Demand_Profile: ADI / CV2 (0.0 if CV2 == 0)
     """
     df = pd.DataFrame({
-        "ADI": np.asarray(adi, dtype=float),
-        "CV2": np.asarray(cv2, dtype=float),
-        "R": np.asarray(r, dtype=float),
-        "L": np.asarray(l, dtype=float),
-        "TSL": np.asarray(tsl, dtype=float),
+        "ADI": np.atleast_1d(np.asarray(adi, dtype=float)),
+        "CV2": np.atleast_1d(np.asarray(cv2, dtype=float)),
+        "R": np.atleast_1d(np.asarray(r, dtype=float)),
+        "L": np.atleast_1d(np.asarray(l, dtype=float)),
+        "TSL": np.atleast_1d(np.asarray(tsl, dtype=float)),
     })
 
     df["Risk_Period"] = df["R"] + df["L"]

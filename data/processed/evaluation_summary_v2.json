@@ -1,44 +1,67 @@
 {
+  "metadata": {
+    "git_commit": "22f346e7906aaa8ca5a8f1f8d3ccae64b395938b",
+    "timestamp": "2026-11-02T20:21:55.694523",
+    "n_skus": 9147,
+    "eval_origin": {
+      "origin_id": "eval",
+      "history_end_day": 1550,
+      "calib_start_day": 1186,
+      "calib_end_day": 1550,
+      "warmup_start_day": 1551,
+      "warmup_end_day": 1610,
+      "scoring_start_day": 1611,
+      "scoring_end_day": 1638,
+      "calib_days": 365,
+      "warmup_days": 60,
+      "scoring_days": 28
+    },
+    "backtest_tuning_fold": {
+      "history_end_day": 1462,
+      "calib_start_day": 1098,
+      "calib_end_day": 1462,
+      "warmup_start_day": 1463,
+      "warmup_end_day": 1522,
+      "scoring_start_day": 1523,
+      "scoring_end_day": 1550,
+      "calib_days": 365,
+      "warmup_days": 60,
+      "scoring_days": 28
+    },
+    "elapsed_seconds": 541.1827223300934
+  },
   "primary_h001": {
     "n_skus": 9147,
     "cost_params": {
       "h_annual": 0.01,
       "b": 0.25,
-      "k": 0.5
+      "k": 0.5,
+      "horizon_days": 28
     },
     "methods": {
-      "LGBM": {
-        "mean_cost": 2.8381218930733896,
-        "median_cost": 0.5571432422228418,
-        "std_cost": 10.949075190268571,
-        "p25_cost": 0.5219178607422555,
-        "p75_cost": 0.8597575202265372,
-        "mean_fill_rate": 0.9492159258689277,
-        "mean_avg_inventory": 94.99796624091906,
-        "mean_lost_sales": 9.166376708825974,
-        "mean_orders": 0.9473051273641632
-      },
       "CATB": {
-        "mean_cost": 2.82082135334255,
-        "median_cost": 0.5571432422228418,
-        "std_cost": 10.626098282973139,
-        "p25_cost": 0.5215704786449444,
-        "p75_cost": 0.9011532738505088,
-        "mean_fill_rate": 0.9500964160862586,
-        "mean_avg_inventory": 94.19264250411547,
-        "mean_lost_sales": 9.103800047825283,
-        "mean_orders": 0.9452279435880616
+        "mean_cost": 4.907308786948037,
+        "median_cost": 0.5527155282507382,
+        "std_cost": 17.06316429050951,
+        "p25_cost": 0.5157782182123154,
+        "p75_cost": 2.5030523561133413,
+        "unit_fill_rate": 0.8564028110855277,
+        "mean_sku_fill_rate": 0.9087988242856898,
+        "mean_avg_inventory": 56.66894224330219,
+        "mean_lost_sales": 17.596158081589312,
+        "mean_orders": 0.9295944025363507
       },
-      "TO": {
-        "mean_cost": 1.3441756787567483,
-        "median_cost": 0.5213015565693789,
-        "std_cost": 6.065029268583927,
-        "p25_cost": 0.5083964407211581,
-        "p75_cost": 0.5614722188018371,
-        "mean_fill_rate": 0.9819665878893309,
-        "mean_avg_inventory": 54.34750410919004,
-        "mean_lost_sales": 3.2604461343089577,
-        "mean_orders": 0.9747458183010823
+      "LGBM": {
+        "mean_cost": 4.813687591838643,
+        "median_cost": 0.5541935889432439,
+        "std_cost": 16.841613206508203,
+        "p25_cost": 0.515852855811751,
+        "p75_cost": 2.351007311150143,
+        "unit_fill_rate": 0.8594171704205609,
+        "mean_sku_fill_rate": 0.9099535730108597,
+        "mean_avg_inventory": 58.138844401177586,
+        "mean_lost_sales": 17.226783557095327,
+        "mean_orders": 0.9247840822127473
       },
       "FSH": {
         "mean_cost": 4.227423302526313,
@@ -46,20 +69,74 @@
         "std_cost": 9.501220904795694,
         "p25_cost": 2.0065573311908844,
         "p75_cost": 2.978094055943227,
-        "mean_fill_rate": 0.9427322107746249,
+        "unit_fill_rate": 0.9213853040382243,
+        "mean_sku_fill_rate": 0.9427322107746249,
         "mean_avg_inventory": 27.542628230535954,
         "mean_lost_sales": 9.633312658393356,
         "mean_orders": 3.595933092817317
+      },
+      "HTB": {
+        "mean_cost": 3.9585733811641473,
+        "median_cost": 0.556456669754752,
+        "std_cost": 14.328520605819719,
+        "p25_cost": 0.5162041600966284,
+        "p75_cost": 1.9184821173878874,
+        "unit_fill_rate": 0.8952104711579572,
+        "mean_sku_fill_rate": 0.9260493561034333,
+        "mean_avg_inventory": 59.50301037300879,
+        "mean_lost_sales": 12.84073266850711,
+        "mean_orders": 1.4054881381873838
+      },
+      "ORACLE": {
+        "mean_cost": 1.3441756787567483,
+        "median_cost": 0.5213015565693789,
+        "std_cost": 6.065029268583927,
+        "p25_cost": 0.5083964407211581,
+        "p75_cost": 0.5614722188018371,
+        "unit_fill_rate": 0.9733924361600451,
+        "mean_sku_fill_rate": 0.9819665878893309,
+        "mean_avg_inventory": 54.34750410919004,
+        "mean_lost_sales": 3.2604461343089577,
+        "mean_orders": 0.9747458183010823
       }
     },
-    "head_to_head_CATB_vs_LGBM": {
-      "relative_cost_reduction": 0.006095770506919628,
-      "catb_strictly_cheaper_count": 1692,
-      "catb_strictly_cheaper_prop": 0.1849786815349295,
-      "lgbm_strictly_cheaper_count": 1262,
-      "lgbm_strictly_cheaper_prop": 0.13796873291789657,
-      "identical_count": 6193,
-      "identical_prop": 0.677052585547174
+    "win_rates": {
+      "CATB_beats_FSH_pct": 72.74516234831093,
+      "CATB_beats_HTB_pct": 28.577675740680004,
+      "LGBM_beats_FSH_pct": 73.24805947305127,
+      "LGBM_beats_HTB_pct": 28.77446157210014
+    },
+    "bootstrap_ci": {
+      "CATB_minus_LGBM": {
+        "mean_diff": 0.09362119510939355,
+        "ci_lower": 0.055878425579712857,
+        "ci_upper": 0.13380350041898487,
+        "ci_level": 0.95
+      },
+      "CATB_minus_FSH": {
+        "mean_diff": 0.6798854844217241,
+        "ci_lower": 0.49272341972217,
+        "ci_upper": 0.8713479441611072,
+        "ci_level": 0.95
+      },
+      "CATB_minus_HTB": {
+        "mean_diff": 0.9487354057838898,
+        "ci_lower": 0.7919725641937526,
+        "ci_upper": 1.1158389311647443,
+        "ci_level": 0.95
+      },
+      "LGBM_minus_FSH": {
+        "mean_diff": 0.5862642893123304,
+        "ci_lower": 0.40441613883801725,
+        "ci_upper": 0.7733889279954778,
+        "ci_level": 0.95
+      },
+      "LGBM_minus_HTB": {
+        "mean_diff": 0.8551142106744962,
+        "ci_lower": 0.6962413804561156,
+        "ci_upper": 1.020148095020151,
+        "ci_level": 0.95
+      }
     }
   },
   "retail_h020": {
@@ -67,38 +144,30 @@
     "cost_params": {
       "h_annual": 0.2,
       "b": 0.25,
-      "k": 0.5
+      "k": 0.5,
+      "horizon_days": 28
     },
     "methods": {
-      "LGBM": {
-        "mean_cost": 4.222749784584868,
-        "median_cost": 1.551405355466705,
-        "std_cost": 11.482678671700361,
-        "p25_cost": 0.9617601855792397,
-        "p75_cost": 3.2818994001350283,
-        "mean_fill_rate": 0.9492159258689277,
-        "mean_avg_inventory": null,
-        "mean_lost_sales": null,
-        "mean_orders": null
-      },
       "CATB": {
-        "mean_cost": 4.193711375594315,
-        "median_cost": 1.5406649116590962,
-        "std_cost": 11.173901452988735,
-        "p25_cost": 0.957775406646874,
-        "p75_cost": 3.234063983087983,
-        "mean_fill_rate": 0.9500964160862586,
+        "mean_cost": 5.733278027316167,
+        "median_cost": 1.3770879098975572,
+        "std_cost": 17.46284630258241,
+        "p25_cost": 0.8346067137081397,
+        "p75_cost": 3.7365698328884287,
+        "unit_fill_rate": 0.8564028110855277,
+        "mean_sku_fill_rate": 0.9087988242856898,
         "mean_avg_inventory": null,
         "mean_lost_sales": null,
         "mean_orders": null
       },
-      "TO": {
-        "mean_cost": 2.0250501064840605,
-        "median_cost": 0.9343171536848124,
-        "std_cost": 6.19543325670892,
-        "p25_cost": 0.6843327933972312,
-        "p75_cost": 1.6115961214137455,
-        "mean_fill_rate": 0.9819789607473511,
+      "LGBM": {
+        "mean_cost": 5.661081159548958,
+        "median_cost": 1.3812491591383083,
+        "std_cost": 17.22503229813241,
+        "p25_cost": 0.8353181426618114,
+        "p75_cost": 3.6801233302992555,
+        "unit_fill_rate": 0.8594171704205609,
+        "mean_sku_fill_rate": 0.9099535730108597,
         "mean_avg_inventory": null,
         "mean_lost_sales": null,
         "mean_orders": null
@@ -109,21 +178,74 @@
         "std_cost": 9.645006142836127,
         "p25_cost": 2.1357648349121368,
         "p75_cost": 3.5338357146614934,
-        "mean_fill_rate": 0.9427322107746249,
+        "unit_fill_rate": 0.9213853040382243,
+        "mean_sku_fill_rate": 0.9427322107746249,
+        "mean_avg_inventory": null,
+        "mean_lost_sales": null,
+        "mean_orders": null
+      },
+      "HTB": {
+        "mean_cost": 4.420222501335769,
+        "median_cost": 1.3859894709358958,
+        "std_cost": 11.485131019088762,
+        "p25_cost": 0.8359176640083402,
+        "p75_cost": 3.248814186290315,
+        "unit_fill_rate": 0.9063582410796227,
+        "mean_sku_fill_rate": 0.9271916794225199,
+        "mean_avg_inventory": null,
+        "mean_lost_sales": null,
+        "mean_orders": null
+      },
+      "ORACLE": {
+        "mean_cost": 2.0250501064840605,
+        "median_cost": 0.9343171536848124,
+        "std_cost": 6.19543325670892,
+        "p25_cost": 0.6843327933972312,
+        "p75_cost": 1.6115961214137455,
+        "unit_fill_rate": 0.9734380736119913,
+        "mean_sku_fill_rate": 0.9819789607473511,
         "mean_avg_inventory": null,
         "mean_lost_sales": null,
         "mean_orders": null
       }
     },
-    "head_to_head_CATB_vs_LGBM": {
-      "relative_cost_reduction": 0.006876658687321953,
-      "catb_strictly_cheaper_count": 1689,
-      "catb_strictly_cheaper_prop": 0.18465070514922927,
-      "lgbm_strictly_cheaper_count": 1267,
-      "lgbm_strictly_cheaper_prop": 0.13851536022739697,
-      "identical_count": 6191,
-      "identical_prop": 0.6768339346233738
+    "win_rates": {
+      "CATB_beats_FSH_pct": 68.4377391494479,
+      "CATB_beats_HTB_pct": 29.998906745381,
+      "LGBM_beats_FSH_pct": 68.76571553514813,
+      "LGBM_beats_HTB_pct": 30.042636930141033
+    },
+    "bootstrap_ci": {
+      "CATB_minus_LGBM": {
+        "mean_diff": 0.07219686776720968,
+        "ci_lower": 0.03467304924414712,
+        "ci_upper": 0.11193046383481318,
+        "ci_level": 0.95
+      },
+      "CATB_minus_FSH": {
+        "mean_diff": 1.1044114859228649,
+        "ci_lower": 0.9125322260798475,
+        "ci_upper": 1.3016059973873986,
+        "ci_level": 0.95
+      },
+      "CATB_minus_HTB": {
+        "mean_diff": 1.3130555259803984,
+        "ci_lower": 1.131417745067372,
+        "ci_upper": 1.5076049928680302,
+        "ci_level": 0.95
+      },
+      "LGBM_minus_FSH": {
+        "mean_diff": 1.032214618155655,
+        "ci_lower": 0.8442534341391772,
+        "ci_upper": 1.224252440513172,
+        "ci_level": 0.95
+      },
+      "LGBM_minus_HTB": {
+        "mean_diff": 1.2408586582131886,
+        "ci_lower": 1.0610689315383894,
+        "ci_upper": 1.4296483066335473,
+        "ci_level": 0.95
+      }
     }
-  },
-  "elapsed_seconds": 292.52231526374817
+  }
 }

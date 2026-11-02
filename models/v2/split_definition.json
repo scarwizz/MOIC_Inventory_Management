@@ -1,0 +1,27 @@
+{
+  "random_seed": 42,
+  "train_origins": [
+    "train_921",
+    "train_1009"
+  ],
+  "val_origin": "val_1097",
+  "val_decision_day": 1097,
+  "purging_rule": "scoring_end_day <= val_decision_day and non-overlapping target windows",
+  "n_train_rows": 1372050,
+  "n_val_rows": 686025,
+  "n_total_skus": 9147,
+  "n_train_skus": 7318,
+  "n_held_out_skus": 1829,
+  "held_out_sku_sample": [
+    "FOODS_3_041_CA",
+    "HOUSEHOLD_1_344_WI",
+    "FOODS_2_022_CA",
+    "FOODS_3_535_WI",
+    "HOUSEHOLD_1_368_WI",
+    "FOODS_3_579_TX",
+    "HOUSEHOLD_2_250_WI",
+    "HOBBIES_1_147_TX",
+    "FOODS_3_804_CA",
+    "HOUSEHOLD_2_288_WI"
+  ]
+}

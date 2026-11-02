@@ -25,7 +25,7 @@ def compute_inventory_cost(
     h_annual: float = 0.01,
     b: float = 0.25,
     k: float = 0.50,
-    horizon_days: int = 365,
+    horizon_days: int = 28,
 ) -> Union[float, np.ndarray]:
     """Compute total inventory cost over the evaluation horizon.
 
@@ -60,7 +60,7 @@ def select_optimal_policy_for_sku(
     h_annual: float = 0.01,
     b: float = 0.25,
     k: float = 0.50,
-    horizon_days: int = 365,
+    horizon_days: int = 28,
 ) -> Dict[str, Any]:
     """Find the cost-minimizing policy among the 75 candidates for a single SKU.
 
@@ -97,7 +97,7 @@ def optimize_all_skus(
     h_annual: float = 0.01,
     b: float = 0.25,
     k: float = 0.50,
-    horizon_days: int = 365,
+    horizon_days: int = 28,
 ) -> pd.DataFrame:
     """Run fully vectorized policy optimization across all SKUs.
 
